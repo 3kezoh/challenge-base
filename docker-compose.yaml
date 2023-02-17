@@ -1,0 +1,26 @@
+services:
+  api:
+    build:
+      context: ./api
+      args:
+        NODE_TAG: ${NODE_TAG:?error}
+    init: true
+    environment:
+      DATABASE_URI: postgresql://${POSTGRES_USER:?error}:${POSTGRES_PASSWORD:?error}@postgres/${POSTGRES_DB:?error}
+    depends_on:
+      - postgres
+    ports:
+      - "3000:3000"
+
+  postgres:
+    image: postgres:${POSTGRES_VERSION:?error}
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:?error}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?errpr}
+      POSTGRES_DB: ${POSTGRES_DB:?error}
+    volumes:
+      - postgres:/var/lib/postgresql/data
+
+volumes:
+  postgres:
+    name: challenge-postgres-data

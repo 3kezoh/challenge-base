@@ -1,0 +1,11 @@
+services:
+  api:
+    build:
+      target: development
+    volumes:
+      - ./api:/home/node/api
+
+  postgres:
+    ports:
+      - "5432:5432"
+

@@ -1,0 +1,53 @@
+name: Deploy
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - "api"
+      - "helm/api"
+      - ".github/workflows/api-deploy.yaml"
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout main
+        uses: actions/checkout@v3
+
+      - name: Compute image tag
+        run: |
+          SHA7=$(git rev-parse --short HEAD)
+          echo "SHA7=$SHA7" >> $GITHUB_ENV
+          echo "TAG=${{ secrets.IMAGE_REPOSITORY }}:$SHA7" >> $GITHUB_ENV
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
+
+      - name: Install doctl
+        uses: digitalocean/action-doctl@v2
+        with:
+          token: ${{ secrets.DIGITALOCEAN_TOKEN }}
+
+      - name: Log in to DigitalOcean Container Registry
+        run: doctl registry login --expiry-seconds 300
+
+      - name: Build and push image
+        uses: docker/build-push-action@v4
+        with:
+          build-args: NODE_TAG=${{ secrets.NODE_TAG }}
+          context: ./api
+          push: true
+          tags: ${{ env.TAG }}
+
+      - name: Install Helm
+        uses: azure/setup-helm@v3
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Save DigitalOcean kubeconfig
+        run: doctl kubernetes cluster kubeconfig save --expiry-seconds 30 ${{ secrets.CLUSTER_NAME }}
+
+      - name: Deploy to DigitalOcean Kubernetes
+        run: helm upgrade --atomic --cleanup-on-fail --install --set image.tag=$SHA7 --set image.repository=${{ secrets.IMAGE_REPOSITORY }} --set imagePullSecrets[0].name=${{ secrets.IMAGE_PULL_SECRET_NAME }} api $GITHUB_WORKSPACE/helm/api
