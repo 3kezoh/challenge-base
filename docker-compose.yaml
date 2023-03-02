@@ -6,7 +6,7 @@ services:
         NODE_TAG: ${NODE_TAG:?error}
     init: true
     environment:
-      DATABASE_URI: postgresql://${POSTGRES_USER:?error}:${POSTGRES_PASSWORD:?error}@postgres/${POSTGRES_DB:?error}
+      DATABASE_URL: postgresql://${POSTGRES_USER:?error}:${POSTGRES_PASSWORD:?error}@postgres/${POSTGRES_DB:?error}
     depends_on:
       - postgres
     ports:
